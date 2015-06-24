@@ -590,12 +590,16 @@ class Conjunction(ComplexFormula):
         if DEBUG_NF: print "%-8s %*c%s" % ("conj", level*2, ' ', str(self))
         clauses = []
         litSets = []
+        trueClauses = 0
         for child in self.children:
             c = child.toCNF(level+1)
             if type(c) == Conjunction: # flatten nested conjunction
                 l = c.children
             else:
                 l = [c]
+            # Count True clauses
+            if type(c) == TrueFalse and c.isTrue():
+                trueClauses += 1
             for clause in l: # (clause is either a disjunction, a literal or a constant)
                 # if the clause is always true, it can be ignored; if it's always false, then so is the conjunction
                 if type(clause) == TrueFalse:
@@ -628,6 +632,10 @@ class Conjunction(ComplexFormula):
                     litSets.append(litSet)
         if len(clauses) == 1:
             return clauses[0]
+        # If all clauses are True, then creating object of Conjunction will give error as it require at least 2 clauses.
+        # So, instead of creating object of Conjunction, create object of TrueFalse with value True
+        if len(clauses) == 0 and trueClauses == len(self.children):
+            return TrueFalse(True)
         return Conjunction(clauses)
     
     def toNNF(self, level = 0):
